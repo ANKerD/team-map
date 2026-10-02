@@ -8,72 +8,32 @@
   <style>
     html, body, #map { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
     #panel {
-      position: absolute; z-index: 1000; top: 12px; left: 12px; width: min(320px, calc(100vw - 24px));
+      position: absolute; z-index: 1000; top: 12px; left: 12px; width: min(280px, calc(100vw - 24px));
       background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.18);
       display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 24px); overflow: auto;
     }
     h1 { margin: 0; font-size: 1rem; }
-    input, button { height: 34px; border: 1px solid #ccd; border-radius: 8px; padding: 0 10px; font: inherit; }
-    input { width: 100%; box-sizing: border-box; }
-    .row { display: flex; gap: 6px; }
-    button { cursor: pointer; background: #f4f4f5; }
-    button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-    button:disabled { opacity: .4; cursor: not-allowed; }
-    #status { font-size: .8rem; color: #666; min-height: 1.1em; }
-    #pins { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    #pins li { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; font-size: .85rem; }
-    #pins .actions { display: flex; gap: 6px; margin-top: 6px; }
-    #results { list-style: none; margin: 0; padding: 0; border: 1px solid #e5e7eb; border-radius: 8px; display: none; overflow: hidden; }
-    #results button { width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eee; border-radius: 0; background: #fff; height: auto; padding: 8px; }
-    #results button:last-child { border-bottom: 0; }
+    #pins { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    #pins button {
+      width: 100%; text-align: left; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px;
+      background: #fff; font: inherit; font-size: .85rem; cursor: pointer;
+    }
+    #pins button:hover { background: #f4f4f5; }
     .muted { color: #666; font-size: .75rem; }
   </style>
 </head>
 <body>
   <div id="panel">
     <h1>Team map</h1>
-    <div class="row">
-      <input id="search" placeholder="Street or city…" />
-      <button type="button" id="searchBtn" class="primary">Search</button>
-    </div>
-    <ul id="results"></ul>
-    <input id="name" placeholder="Member name" />
-    <div class="row">
-      <button type="button" id="saveBtn" class="primary">Save pin</button>
-      <button type="button" id="undoBtn" disabled>Undo</button>
-    </div>
-    <div id="status">Click the map or search a place.</div>
     <ul id="pins"></ul>
+    <div class="muted">Pins live in <a href="https://github.com/ANKerD/team-map/blob/main/pins.json">pins.json</a>. Ask Cursor: “add pin for &lt;name&gt; in &lt;city&gt;”.</div>
   </div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const KEY = "team-map.pins.v1";
-    const TRASH = "team-map.trash.v1";
-    const $ = (id) => document.getElementById(id);
-    let pins = JSON.parse(localStorage.getItem(KEY) || "[]");
-    let trash = JSON.parse(localStorage.getItem(TRASH) || "[]");
+    const map = L.map("map").setView([-15, -47], 4);
 
-    const SEEDED = "team-map.seeded.v1";
-    const SEEDS = [
-      { id: "seed-anderson", name: "Anderson", lat: -23.5575814, lng: -46.6606235 },
-      { id: "seed-anderson-mom", name: "Anderson Mom", lat: -6.379745, lng: -37.186362 },
-      { id: "seed-kessler", name: "Kessler", lat: -23.5506507, lng: -46.6333824 },
-      { id: "seed-adauto", name: "Adauto", lat: -18.9188041, lng: -48.2767837 },
-      { id: "seed-telles", name: "Telles", lat: -7.1215981, lng: -34.882028 },
-      { id: "seed-israel", name: "Israel", lat: -7.2885006, lng: -39.4820298 },
-    ];
-    if (!localStorage.getItem(SEEDED)) {
-      const known = new Set([...pins, ...trash].map((p) => p.id));
-      pins.push(...SEEDS.filter((s) => !known.has(s.id)));
-      localStorage.setItem(SEEDED, "1");
-    }
-    let draft = null;
-    let draftMarker = null;
-    const markers = new Map();
-
-    const map = L.map("map").setView([20, 0], 2);
     // MapTiler key is restricted to allowed origins; requests from other origins get 403.
     const MAPTILER_KEY = "7CwCPzXJgwhP4wMctjV6"; // gitleaks:allow — public MapTiler browser key, origin-restricted
     const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
@@ -92,121 +52,26 @@
       }).addTo(map);
     });
 
-    map.on("click", (e) => {
-      setDraft(e.latlng.lat, e.latlng.lng);
-      status("Pin draft set — enter a name and Save.");
-    });
-
-    function status(msg) { $("status").textContent = msg; }
-    function persist() {
-      localStorage.setItem(KEY, JSON.stringify(pins));
-      localStorage.setItem(TRASH, JSON.stringify(trash));
-      $("undoBtn").disabled = trash.length === 0;
-    }
-    function setDraft(lat, lng) {
-      draft = { lat, lng };
-      if (draftMarker) draftMarker.setLatLng([lat, lng]);
-      else draftMarker = L.circleMarker([lat, lng], { radius: 8, color: "#2563eb", fillOpacity: 0.3 }).addTo(map);
-    }
-    function clearDraft() {
-      draft = null;
-      if (draftMarker) { map.removeLayer(draftMarker); draftMarker = null; }
-    }
-    function savePin() {
-      const name = $("name").value.trim();
-      if (!name) return status("Enter a member name.");
-      if (!draft) return status("Click the map or pick a search result first.");
-      pins.push({ id: "p" + Date.now(), name, lat: draft.lat, lng: draft.lng });
-      $("name").value = "";
-      clearDraft();
-      persist(); render();
-      status("Saved " + name);
-    }
-    function removePin(id) {
-      const pin = pins.find((p) => p.id === id);
-      if (!pin) return;
-      pins = pins.filter((p) => p.id !== id);
-      trash.unshift(pin);
-      trash = trash.slice(0, 30);
-      persist(); render();
-      status("Removed " + pin.name + " — Undo available");
-    }
-    function undo() {
-      const pin = trash.shift();
-      if (!pin) return;
-      pins.push(pin);
-      persist(); render();
-      map.setView([pin.lat, pin.lng], Math.max(map.getZoom(), 10));
-      status("Restored " + pin.name);
-    }
-    function render() {
-      for (const m of markers.values()) map.removeLayer(m);
-      markers.clear();
-      const list = $("pins");
-      list.innerHTML = "";
-      const sorted = [...pins].sort((a, b) => a.name.localeCompare(b.name));
-      for (const pin of sorted) {
-        const m = L.marker([pin.lat, pin.lng]).addTo(map).bindPopup(pin.name);
-        m.on("click", () => map.setView([pin.lat, pin.lng], 14));
-        markers.set(pin.id, m);
-        const li = document.createElement("li");
-        li.innerHTML = `<strong></strong><div class="muted"></div><div class="actions"></div>`;
-        li.querySelector("strong").textContent = pin.name;
-        li.querySelector(".muted").textContent = pin.lat.toFixed(4) + ", " + pin.lng.toFixed(4);
-        const go = document.createElement("button");
-        go.textContent = "Go";
-        go.onclick = () => map.setView([pin.lat, pin.lng], 14);
-        const del = document.createElement("button");
-        del.textContent = "Delete";
-        del.onclick = () => removePin(pin.id);
-        li.querySelector(".actions").append(go, del);
-        list.appendChild(li);
-      }
-      if (!sorted.length) list.innerHTML = '<li class="muted">No pins yet.</li>';
-    }
-    async function search() {
-      const q = $("search").value.trim();
-      if (!q) return status("Type a street or city.");
-      $("searchBtn").disabled = true;
-      status("Searching…");
-      $("results").style.display = "none";
-      $("results").innerHTML = "";
-      try {
-        const url = "https://nominatim.openstreetmap.org/search?" + new URLSearchParams({
-          format: "json", limit: "5", q,
-        });
-        const res = await fetch(url, { headers: { Accept: "application/json" } });
-        const data = await res.json();
-        if (!data.length) { status("No results."); return; }
-        $("results").style.display = "block";
-        for (const item of data) {
+    fetch("pins.json", { cache: "no-cache" })
+      .then((r) => r.json())
+      .then((pins) => {
+        const list = document.getElementById("pins");
+        const sorted = [...pins].sort((a, b) => a.name.localeCompare(b.name));
+        for (const pin of sorted) {
+          const marker = L.marker([pin.lat, pin.lng]).addTo(map)
+            .bindPopup(`<strong>${pin.name}</strong><br/>${pin.place || ""}`);
           const li = document.createElement("li");
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.textContent = item.display_name;
-          btn.onclick = () => {
-            const lat = +item.lat, lng = +item.lon;
-            setDraft(lat, lng);
-            map.setView([lat, lng], 15);
-            $("results").style.display = "none";
-            status("Place selected — enter a name and Save.");
-          };
+          btn.innerHTML = `<strong></strong><div class="muted"></div>`;
+          btn.querySelector("strong").textContent = pin.name;
+          btn.querySelector(".muted").textContent = pin.place || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`;
+          btn.onclick = () => { map.setView([pin.lat, pin.lng], 13); marker.openPopup(); };
           li.appendChild(btn);
-          $("results").appendChild(li);
+          list.appendChild(li);
         }
-        status(data.length + " result(s) — pick one.");
-      } catch {
-        status("Search failed. Try again.");
-      } finally {
-        $("searchBtn").disabled = false;
-      }
-    }
-    $("searchBtn").onclick = search;
-    $("search").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); search(); } };
-    $("saveBtn").onclick = savePin;
-    $("undoBtn").onclick = undo;
-    persist(); render();
-    if (pins.length) map.fitBounds(L.latLngBounds(pins.map((p) => [p.lat, p.lng])).pad(0.25));
+        if (pins.length) map.fitBounds(L.latLngBounds(pins.map((p) => [p.lat, p.lng])).pad(0.25));
+      });
   </script>
 </body>
 </html>
