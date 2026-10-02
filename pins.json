@@ -40,12 +40,5 @@
     "place": "João Pessoa, PB",
     "lat": -7.1215981,
     "lng": -34.882028
-  },
-  {
-    "id": "teste-skill",
-    "name": "Teste Skill",
-    "place": "Campina Grande, PB, Brasil",
-    "lat": -7.2246743,
-    "lng": -35.8771292
   }
 ]
