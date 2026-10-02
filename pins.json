@@ -1,5 +1,12 @@
 [
   {
+    "id": "adauto",
+    "name": "Adauto",
+    "place": "Uberlândia, MG",
+    "lat": -18.9188041,
+    "lng": -48.2767837
+  },
+  {
     "id": "anderson",
     "name": "Anderson",
     "place": "Avenida Paulista, São Paulo, SP",
@@ -14,18 +21,18 @@
     "lng": -37.186362
   },
   {
+    "id": "israel",
+    "name": "Israel",
+    "place": "Crato, CE",
+    "lat": -7.2885006,
+    "lng": -39.4820298
+  },
+  {
     "id": "kessler",
     "name": "Kessler",
     "place": "São Paulo, SP",
     "lat": -23.5506507,
     "lng": -46.6333824
-  },
-  {
-    "id": "adauto",
-    "name": "Adauto",
-    "place": "Uberlândia, MG",
-    "lat": -18.9188041,
-    "lng": -48.2767837
   },
   {
     "id": "telles",
@@ -35,10 +42,10 @@
     "lng": -34.882028
   },
   {
-    "id": "israel",
-    "name": "Israel",
-    "place": "Crato, CE",
-    "lat": -7.2885006,
-    "lng": -39.4820298
+    "id": "teste-skill",
+    "name": "Teste Skill",
+    "place": "Campina Grande, PB, Brasil",
+    "lat": -7.2246743,
+    "lng": -35.8771292
   }
 ]
