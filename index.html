@@ -54,6 +54,21 @@
     const $ = (id) => document.getElementById(id);
     let pins = JSON.parse(localStorage.getItem(KEY) || "[]");
     let trash = JSON.parse(localStorage.getItem(TRASH) || "[]");
+
+    const SEEDED = "team-map.seeded.v1";
+    const SEEDS = [
+      { id: "seed-anderson", name: "Anderson", lat: -23.5575814, lng: -46.6606235 },
+      { id: "seed-anderson-mom", name: "Anderson Mom", lat: -6.379745, lng: -37.186362 },
+      { id: "seed-kessler", name: "Kessler", lat: -23.5506507, lng: -46.6333824 },
+      { id: "seed-adauto", name: "Adauto", lat: -18.9188041, lng: -48.2767837 },
+      { id: "seed-telles", name: "Telles", lat: -7.1215981, lng: -34.882028 },
+      { id: "seed-israel", name: "Israel", lat: -7.2885006, lng: -39.4820298 },
+    ];
+    if (!localStorage.getItem(SEEDED)) {
+      const known = new Set([...pins, ...trash].map((p) => p.id));
+      pins.push(...SEEDS.filter((s) => !known.has(s.id)));
+      localStorage.setItem(SEEDED, "1");
+    }
     let draft = null;
     let draftMarker = null;
     const markers = new Map();
