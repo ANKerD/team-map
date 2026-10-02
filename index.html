@@ -60,10 +60,12 @@
 
     const map = L.map("map").setView([20, 0], 2);
     // Carto tiles (OSM data) — official osm.org tiles block many clients with 403
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      maxZoom: 20,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: "abcd",
+    const MAPTILER_KEY = "7CwCPzXJgwhP4wMctjV6"; // gitleaks:allow — public MapTiler browser key, restrict by HTTP referrer
+    L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://www.maptiler.com/">MapTiler</a>',
     }).addTo(map);
 
     map.on("click", (e) => {
